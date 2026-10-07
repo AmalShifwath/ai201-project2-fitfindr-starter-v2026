@@ -39,8 +39,14 @@
 
 ## What This Does
 
-<!-- Three or four sentences: what a user asks for, and what they get back. -->
-
+A user types a plain-language request — "a vintage graphic tee under $30,
+size M" — and FitFindr searches the listings data for matches, picks the
+best one, works out what it would go with given the user's wardrobe (or
+general styling advice if they haven't entered one), and writes a short
+caption they could actually post about the find. If nothing in the data
+matches the request, the agent stops after the search and tells the user
+what to change, instead of asking the model to style and caption an item
+that doesn't exist.
 
 
 ---
@@ -59,24 +65,43 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Filters the listings data by price and size, scores what's
+  left by keyword overlap with the description, and returns the matches
+  ranked best-first.
+- **Inputs:** `description` (str) — keywords describing what the user wants.
+  `size` (str or None) — a size token to match; None skips size filtering.
+  `max_price` (float or None) — inclusive price ceiling; None skips price
+  filtering.
+- **Returns:** A list of listing dicts, best match first, each with
+  `id`, `title`, `description`, `category`, `style_tags` (list), `size`,
+  `condition`, `price` (float), `colors` (list), `brand` (str or None),
+  `platform`. At most `config.SEARCH_RESULT_LIMIT` of them.
+- **When it has nothing:** Returns `[]` — an empty list, never `None`, never
+  an exception.
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Asks the model for one or two outfit ideas combining a
+  new item with the user's existing wardrobe.
+- **Inputs:** `new_item` (dict) — a listing dict, the item being considered.
+  `wardrobe` (dict) — a wardrobe dict with an `items` key holding a list of
+  wardrobe item dicts; the list may be empty.
+- **Returns:** A non-empty string of outfit suggestions from the model.
+- **When it has nothing:** When `wardrobe["items"]` is empty, returns general
+  styling advice for the new item (what *kind* of pieces would pair with it)
+  rather than naming specific pieces from a closet that doesn't exist.
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Writes a two-to-four sentence caption someone would
+  actually post about the thrifted item, built from the outfit suggestion.
+- **Inputs:** `outfit` (str) — the string `suggest_outfit` returned.
+  `new_item` (dict) — the listing dict for the item.
+- **Returns:** A string caption that mentions the item, its price, and its
+  platform once each.
+- **When it has nothing:** If `outfit` is empty or whitespace-only, returns a
+  descriptive string naming the item and saying no caption could be written,
+  rather than calling the model or raising.
 
 ---
 
@@ -93,13 +118,28 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If `search_listings` returns an empty list, put a message in
+`session["error"]` naming what the user could change (price ceiling, size
+filter, keywords) and stop — do not call `suggest_outfit`. Otherwise, take
+the first result as `session["selected_item"]` and continue to
+`suggest_outfit` and then `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** Regex. `parse_query()` in `agent.py` pulls a
+price ceiling out of patterns like "under $30" / "below 40" / "up to $50",
+and a size out of "size X", then strips both matched spans out of the
+original query and treats what's left as the search description. This is
+enough for every query in `app.py`'s `EXAMPLE_QUERIES`, and it costs zero
+model calls to parse one query.
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** `query` → `parsed` (from `parse_query`) →
+`search_results` (from `search_listings`) → `selected_item` (first of
+`search_results`) → `outfit_suggestion` (from `suggest_outfit`, given
+`selected_item` and `wardrobe`) → `fit_card` (from `create_fit_card`, given
+`outfit_suggestion` and `selected_item`). `error` is set only on the
+empty-search branch, and every field after `search_results` stays `None` when
+it fires.
 
 ---
 
@@ -112,26 +152,42 @@
 
 **One full query**
 
-```
-$ python app.py ask '...'
+> This container has no `GEMINI_API_KEY` configured, so the live model calls
+> (`suggest_outfit`, `create_fit_card`) can't run here. The run below shows
+> the real `ModelUnavailable` path — search and the branch logic ran for
+> real; the model call failed because there's no key, exactly like unit 4
+> Milestone 2 asks you to trigger on purpose. Once a real key is in `.env`,
+> re-run this and replace the output below with the real fit card.
 
+```
+$ python app.py ask 'vintage graphic tee under $30'
+
+  ModelUnavailable: The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
+0 model calls this session
 ```
 
 **The three tools, tested one at a time**
 
 ```
 $ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
-
+[{'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'price': 18.0, 'size': 'S/M', ...},
+ {'id': 'lst_006', 'title': 'Graphic Tee — 2003 Tour Bootleg Style', 'price': 24.0, 'size': 'L', ...},
+ {'id': 'lst_017', 'title': 'Mesh Long-Sleeve Top — Black', 'price': 15.0, 'size': 'S/M', ...},
+ {'id': 'lst_033', 'title': 'Vintage Band Tee — Faded Grey', 'price': 19.0, 'size': 'L', ...},
+ {'id': 'lst_011', 'title': 'Low-Rise Cargo Pants — Khaki', 'price': 27.0, 'size': 'W29', ...},
+ {'id': 'lst_015', 'title': 'Vintage Graphic Hoodie — Faded Black', 'price': 26.0, 'size': 'L', ...}]
 ```
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
 
+  <needs a real GEMINI_API_KEY to run — paste the real output here once you have one>
 ```
 
 ```
-$ python -c "from tools import create_fit_card; ..."
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
 
+  <needs a real GEMINI_API_KEY to run — paste the real output here once you have one>
 ```
 
 ---
@@ -147,15 +203,33 @@ $ python -c "from tools import create_fit_card; ..."
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Help implementing `search_listings`'s size matching,
+  given the starter's warning that `"s" in "us 9"` and `"l" in "xl"` are both
+  `True`.
+- *What came back:* A tokenizer (`re.findall(r"[a-z0-9]+|...")`) that splits
+  both the user's size and the listing's size string into whole tokens and
+  checks for a shared token, instead of a substring check.
+- *What I changed:* Verified it against the actual data (`python app.py
+  listings --full -n 6` and the full size list in `data/listings.json`) —
+  sizes like `"XL (oversized)"` and `"US 9"` tokenize into `{"xl",
+  "oversized"}` and `{"us", "9"}`, so `"L"` correctly does *not* match
+  `"XL (oversized)"` while `"M"` correctly does match `"S/M"`. Ran
+  `search_listings('graphic tee', size='M', max_price=30)` and
+  `search_listings(..., size='L', ...)` side by side to confirm they return
+  different result sets before trusting it.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* A sanity check on the first draft of criterion 4 (the
+  fit-card criterion), which originally just said "the fit card reads
+  naturally and isn't a generic template."
+- *What came back:* A pointed question back — could someone test "reads
+  naturally" from that sentence alone without asking what I meant? No.
+  "Template" also wasn't defined.
+- *What I changed:* Rewrote it to two checkable things: no shared opening
+  sentence across 5 different items, and price + platform mentioned in at
+  least 4 of 5 captions — both are things you can check from the text alone,
+  without asking me what I meant by "natural."
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
