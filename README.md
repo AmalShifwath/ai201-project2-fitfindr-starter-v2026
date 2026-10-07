@@ -41,7 +41,14 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
+the agent searches for outfits that the user wants to browse based on preferences, filters, interests, constraints, - as parameters. The agent searches the listings of outfits and gives an list of outfit suggestions, what would pair well with each, and writes a small social-media style caption aswell .
 
+In short:  
+Searches a file of fake listings for matches
+  
+Suggests what outfit that item would go with, using a wardrobe
+  
+Writes a short caption, like something you’d post on Instagram
 
 ---
 

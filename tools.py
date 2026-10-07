@@ -20,6 +20,8 @@ That last line is what your loop branches on. "Returns a list" earns nothing —
 the description has to say what is *in* the list.
 """
 
+import re
+
 import config  # noqa: F401 — you'll use this in search_listings
 from generate import generate
 from utils.data_loader import load_listings
@@ -78,8 +80,40 @@ def search_listings(
     Test it from a terminal before you move on:
         python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
     """
-    # TODO: replace this with your implementation
-    return []
+    query_terms = set(re.findall(r"[a-z0-9]+", description.lower()))
+    if not query_terms:
+        return []
+
+    size_terms = set(re.findall(r"[a-z0-9]+", size.lower())) if size else None
+    scored = []
+
+    for listing in load_listings():
+        if max_price is not None and listing["price"] > max_price:
+            continue
+
+        if size_terms:
+            listing_size_terms = set(re.findall(r"[a-z0-9]+", listing["size"].lower()))
+            if not size_terms & listing_size_terms:
+                continue
+
+        searchable_parts = [
+            listing["title"],
+            listing["description"],
+            listing["category"],
+            listing["size"],
+            listing["condition"],
+            listing["platform"],
+            listing.get("brand") or "",
+            " ".join(listing.get("style_tags", [])),
+            " ".join(listing.get("colors", [])),
+        ]
+        listing_terms = set(re.findall(r"[a-z0-9]+", " ".join(searchable_parts).lower()))
+        score = len(query_terms & listing_terms)
+        if score:
+            scored.append((score, listing))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return [listing for _, listing in scored[:config.SEARCH_RESULT_LIMIT]]
 
 
 # ── Tool 2: suggest_outfit ────────────────────────────────────────────────────
