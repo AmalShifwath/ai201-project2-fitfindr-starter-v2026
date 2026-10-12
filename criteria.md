@@ -87,7 +87,7 @@ Across 5 runs of the same matching query with caching off, all 5 fit cards conta
 
 ---
 
-## 5. Your choice - The price request is acknowledged and the parsed price of the results is correct.
+## 5. Your choice - The price request is respected and the parsed price of the results is correct.
 
 <!-- YOU WRITE THIS ONE TOO.
 
