@@ -187,6 +187,17 @@ You’ll wear these on repeat!
 ```
 $ python -c "from tools import create_fit_card; ..."
 
+python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+output: Nothing beats the wash on these vintage Levi's 501s. Throw them on with some beat-up white sneakers and a plain tee for that effortless 90s off-duty look. Grab them on my Depop right now for $38 before I change my mind and keep them.
+
+python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('', load_listings()[0]))"
+output: No outfit suggestion was provided, so no fit card was written.  
+  
+python -c "import config; config.CACHE_ENABLED=False; from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+output: Nothing beats the way broken-in vintage Levi's 501s actually fit, especially in this classic medium wash. Just throw them on with crisp white sneakers for that effortlessly cool 90s off-duty look. Grab this pair now on Depop for just $38 before I change my mind and keep them.
+  
+python -c "import config; config.CACHE_ENABLED=False; from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"  
+output: Nothing beats a broken-in pair of vintage Levi's 501s with that perfect 90s slouch. Just add your favorite beat-up white sneakers and a simple tee for the ultimate effortless look. Grab these medium wash classics on my Depop for $38 before I change my mind and keep them.  
 ```
 
 ---
