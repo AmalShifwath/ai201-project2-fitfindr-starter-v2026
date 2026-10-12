@@ -144,11 +144,44 @@ $ python app.py ask '...'
 ```
 $ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
 
+python -c "from tools import search_listings; [print(r['id'], r['title'], r['price'], r['size']) for r in search_listings('graphic tee', max_price=30)]"  
+ 
+lst_002 Y2K Baby Tee — Butterfly Print 18.0 S/M
+  
+lst_006 Graphic Tee — 2003 Tour Bootleg Style 24.0 L  
+
+lst_017 Mesh Long-Sleeve Top — Black 15.0 S/M  
+
+lst_033 Vintage Band Tee — Faded Grey 19.0 L  
+
+lst_011 Low-Rise Cargo Pants — Khaki 27.0 W29
+  
+lst_015 Vintage Graphic Hoodie — Faded Black 26.0 L 
 ```
 
 ```
 $ python -c "from tools import suggest_outfit; ..."
 
+python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+Snag those 501s! They’re a classic wardrobe anchor. 
+
+**Outfit 1: Casual Streetwear**
+Pair the Vintage Levi's 501 Jeans with your White ribbed tank top and throw the Vintage black denim jacket on top. Add your chunky white sneakers andthe Black crossbody bag for an effortless 90s look.
+
+**Outfit 2: Cozy Contrast**
+Tuck the White ribbed tank top into the 501s, cinch them with your Brown leather belt, and layer the Oversized grey crewneck sweatshirt over top. Ground the outfit with your Black combat boots for a cool, grungy edge.
+
+
+python -c "from tools import suggest_outfit; from utils.data_loader import get_empty_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_empty_wardrobe()))"
+Buy them—vintage 501s are wardrobe gold! 
+
+**Outfit 1: Casual Streetwear**
+Pair these jeans with a crisp white oversized t-shirt, a worn-in black leather jacket, and chunky white sneakers. Add a silver chain necklace to finish the look. 
+
+**Outfit 2: Effortless Cool**
+Tuck a black ribbed tank top or a heather-gray crewneck sweatshirt into the waistband. Throw on a brown plaid flannel overshirt and classic canvas sneakers or beat-up loafers. 
+
+You’ll wear these on repeat!
 ```
 
 ```

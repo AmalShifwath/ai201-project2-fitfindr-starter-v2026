@@ -146,9 +146,40 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
     """
-    # TODO: replace this with your implementation
-    return ""
 
+    items = (wardrobe or {}).get("items") or []
+
+    item_text = (
+        f"{new_item['title']} ({new_item['category']}, size {new_item['size']}, "
+        f"colors: {', '.join(new_item.get('colors', []))}, "
+        f"style: {', '.join(new_item.get('style_tags', []))})"
+    )
+
+    system = "You are a friendly thrift-store stylist. Be concrete and brief."
+
+    if not items:
+        prompt = (
+            f"Someone is thinking of buying this thrifted item:\n{item_text}\n\n"
+            "They have not told us what is in their wardrobe. Suggest one or two "
+            "outfits using general pieces and colors that would go with it. "
+            "Keep it under 120 words."
+        )
+    else:
+        wardrobe_lines = "\n".join(
+            f"- {w['name']} ({w.get('category', '?')}; "
+            f"colors: {', '.join(w.get('colors', []))}; {w.get('notes', '')})"
+            for w in items
+        )
+        prompt = (
+            f"Someone is thinking of buying this thrifted item:\n{item_text}\n\n"
+            f"Their wardrobe:\n{wardrobe_lines}\n\n"
+            "Suggest one or two outfits that combine the new item with pieces "
+            "from this wardrobe. Name the wardrobe pieces exactly as written. "
+            "Keep it under 120 words."
+        )
+
+    text = generate(prompt, system=system)
+    return text or "Try pairing it with simple basics in a neutral color."
 
 # ── Tool 3: create_fit_card ───────────────────────────────────────────────────
 
