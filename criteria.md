@@ -36,7 +36,7 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
 Given a query that matches no listings, the agent stops before calling
 `suggest_outfit` and returns a message naming what to change — 5 of 5 tries.
 
-**Why this target:** The empty branch is a plain 'if' statement on a list and model call is involved, so the same impossible query should behave identically every time.
+**Why this target:** The empty branch is a plain 'if' statement on a list and no model call is involved, so the same impossible query should behave identically every time.
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
 
@@ -79,7 +79,7 @@ On a query that matches at least one listing, session["selected_item"]["id"] equ
 
 
   
-Across 5 runs of the same matching query with caching off, all 5 fit cards contain the item’s price and platform name, at least 4 of 5 are two to four sentences long, and no two of the 5 are word-for-word identical.  
+Across 5 runs of the same matching query with caching off, all 5 fit cards contain the item's dollar amount (with or without decimals, so "$18" counts for 18.0) and the platform name (ignoring upper or lower case, so "Depop" counts for "depop"), at least 4 of 5 are two to four sentences long, and no two of the 5 are word-for-word identical..  
 
 **Why this target:** The price and platform are in the prompt, so leaving them out means my prompt is weak, which is why 5 of 5. Sentence count depends on the model following instructions, so I allow one miss (4 of 5). “Not identical” checks that temperature is working. Two cards can differ by one word and still pass, so this guards against caching or TEMPERATURE = 0 rather than proving the cards are good.
 

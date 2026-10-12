@@ -133,9 +133,10 @@ Size matches by whole word, not by substring. “M” matches “S/M” and “M
      2. Your three per-tool terminal tests — the command and what it printed. -->
 
 **One full query**
+  
 
-```
-python app.py ask 'vintage graphic tee under $30'
+```  
+$ python app.py ask 'vintage graphic tee under $30'  
 
   Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
 
@@ -160,14 +161,25 @@ python app.py ask 'vintage graphic tee under $30'
   Fit card: Literally just scored the ultimate Y2K baby tee with the cutest little butterfly print on Depop for $18. The pink and purple graphic gives off major early-2000s mall vibes, especially paired with some baggy dark wash jeans and chunky sneakers. Cannot wait to live in this all summer.
 
 2 model calls this session, 579 prompt + 247 output tokens
-```
+```  
+  
+
+```  
+$ python app.py ask 'designer ballgown size XXS under $5'  
+
+No listings matched 'designer ballgown', size XXS, under $5. Try raising your price limit, dropping the size, or using broader keywords (for example 'tee' instead of a very specific style).
+
+0 model calls this session  
+```  
+
 
 **The three tools, tested one at a time**
 
 ```
 $ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
+Replaced the above command with the below (for better output readability):  
 
-python -c "from tools import search_listings; [print(r['id'], r['title'], r['price'], r['size']) for r in search_listings('graphic tee', max_price=30)]"  
+$ python -c "from tools import search_listings; [print(r['id'], r['title'], r['price'], r['size']) for r in search_listings('graphic tee', max_price=30)]"  
  
 lst_002 Y2K Baby Tee — Butterfly Print 18.0 S/M
   
@@ -185,7 +197,7 @@ lst_015 Vintage Graphic Hoodie — Faded Black 26.0 L
 ```
 $ python -c "from tools import suggest_outfit; ..."
 
-python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
 Snag those 501s! They’re a classic wardrobe anchor. 
 
 **Outfit 1: Casual Streetwear**
@@ -195,7 +207,7 @@ Pair the Vintage Levi's 501 Jeans with your White ribbed tank top and throw the 
 Tuck the White ribbed tank top into the 501s, cinch them with your Brown leather belt, and layer the Oversized grey crewneck sweatshirt over top. Ground the outfit with your Black combat boots for a cool, grungy edge.
 
 
-python -c "from tools import suggest_outfit; from utils.data_loader import get_empty_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_empty_wardrobe()))"
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_empty_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_empty_wardrobe()))"
 Buy them—vintage 501s are wardrobe gold! 
 
 **Outfit 1: Casual Streetwear**
@@ -210,16 +222,16 @@ You’ll wear these on repeat!
 ```
 $ python -c "from tools import create_fit_card; ..."
 
-python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
 output: Nothing beats the wash on these vintage Levi's 501s. Throw them on with some beat-up white sneakers and a plain tee for that effortless 90s off-duty look. Grab them on my Depop right now for $38 before I change my mind and keep them.
 
-python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('', load_listings()[0]))"
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('', load_listings()[0]))"
 output: No outfit suggestion was provided, so no fit card was written.  
   
-python -c "import config; config.CACHE_ENABLED=False; from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+$ python -c "import config; config.CACHE_ENABLED=False; from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
 output: Nothing beats the way broken-in vintage Levi's 501s actually fit, especially in this classic medium wash. Just throw them on with crisp white sneakers for that effortlessly cool 90s off-duty look. Grab this pair now on Depop for just $38 before I change my mind and keep them.
   
-python -c "import config; config.CACHE_ENABLED=False; from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"  
+$ python -c "import config; config.CACHE_ENABLED=False; from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"  
 output: Nothing beats a broken-in pair of vintage Levi's 501s with that perfect 90s slouch. Just add your favorite beat-up white sneakers and a simple tee for the ultimate effortless look. Grab these medium wash classics on my Depop for $38 before I change my mind and keep them.  
 ```
 
@@ -236,15 +248,18 @@ output: Nothing beats a broken-in pair of vintage Levi's 501s with that perfect 
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* After my loop worked, I pasted my "no results" message into a fresh chat. I asked what I would try next if I knew nothing about the app, and told it not to rewrite the message.
+- *What came back:* It listed three concrete things to try (raise the price limit, drop the size, use broader keywords). It also pointed out that the message didn't say which of my limits caused the miss.
+- *What I changed:* In `agent.py::run_agent` I built the message from `session["parsed"]`. It now reads "No listings matched 'designer ballgown', size XXS, under $5. Try raising..." so the user can see what the agent understood.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Whether the query should be parsed by the model instead of regex, and whether the model should also decide which listings match.
+- *What came back:* A recommendation to start with regex. It is deterministic, costs no extra model calls (I'm limited to 15 a minute), and keeps the empty-search branch easy to test. It said to use the model for understanding the query, not for deciding the result.
+- *What I changed:* I kept regex parsing and described it in Planning Loop. While testing `search_listings` I also found that "tees" doesn't match "tee", so a plural is silently ignored. I left that gap in and wrote it down as something to diagnose in unit 4.  
+  
+**Also:** I used Claude to draft the `suggest_outfit`, `create_fit_card` and `run_agent` code, and to test criteria 3, 4, and 5. I tested every tool myself.  
+
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
