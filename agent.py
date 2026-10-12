@@ -17,6 +17,7 @@ import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
 from generate import ModelUnavailable
+import re
 
 
 # ── session state ─────────────────────────────────────────────────────────────
@@ -48,6 +49,32 @@ def new_session(query: str, wardrobe: dict) -> dict:
 
 
 # ── planning loop ─────────────────────────────────────────────────────────────
+
+FILLER = {
+    "under", "size", "looking", "for", "a", "an", "the", "i", "want", "need",
+    "me", "find", "show", "please", "or", "less", "than", "below", "max",
+}
+
+def parse_query(query: str) -> dict:
+    text = query.lower()
+
+    max_price = None
+    m = (
+        re.search(r"(?:under|below|less than|max|up to)\s*\$?\s*(\d+(?:\.\d+)?)", text)
+        or re.search(r"\$\s*(\d+(?:\.\d+)?)\s*(?:or less|or under|max)?", text)
+    )
+    if m:
+        max_price = float(m.group(1))
+        text = text.replace(m.group(0), " ")
+
+    size = None
+    m = re.search(r"\bsize\s+([a-z0-9/]+)", text)
+    if m:
+        size = m.group(1).upper()
+        text = text.replace(m.group(0), " ")
+
+    words = [w for w in re.findall(r"[a-z0-9]+", text) if w not in FILLER]
+    return {"description": " ".join(words), "size": size, "max_price": max_price}
 
 def run_agent(query: str, wardrobe: dict) -> dict:
     """
@@ -107,8 +134,52 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    session = new_session(query, wardrobe)
+
+    count = 0
+    count += 1
+    trace.check_iterations(count)
+
+    # 1. Parse
+    session["parsed"] = parse_query(query)
+    p = session["parsed"]
+
+    # 2. Search, stored in the session
+    session["search_results"] = search_listings(
+        p["description"], p["size"], p["max_price"]
+    )
+
+    # 3. THE BRANCH
+    if not session["search_results"]:
+        bits = [f"'{p['description']}'"]
+        if p["size"]:
+            bits.append(f"size {p['size']}")
+        if p["max_price"] is not None:
+            bits.append(f"under ${p['max_price']:.0f}")
+        session["error"] = (
+            f"No listings matched {', '.join(bits)}. "
+            "Try raising your price limit, dropping the size, or using "
+            "broader keywords (for example 'tee' instead of a very specific style)."
+        )
+        return session
+
+    # 4. Choose an item, read back from the session
+    session["selected_item"] = session["search_results"][0]
+
+    # 5. Outfit, using what's stored in the session
+    session["outfit_suggestion"] = suggest_outfit(
+        session["selected_item"], session["wardrobe"]
+    )
+
+    # 6. Fit card, again from the session
+    session["fit_card"] = create_fit_card(
+        session["outfit_suggestion"], session["selected_item"]
+    )
+
+
+    # # TODO: delete these two lines and build the loop.
+    # session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+
     return session
 
 

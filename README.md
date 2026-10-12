@@ -135,8 +135,31 @@ Size matches by whole word, not by substring. “M” matches “S/M” and “M
 **One full query**
 
 ```
-$ python app.py ask '...'
+python app.py ask 'vintage graphic tee under $30'
 
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   You definitely need this! Here are two quick ways to style it using your current pieces:
+
+**Look 1: Casual Y2K Contrast**
+*   Y2K Baby Tee — Butterfly Print
+*   Baggy straight-leg jeans, dark wash
+*   Chunky white sneakers
+*   Black crossbody bag
+
+*Why it works:* The tight baby tee balances out the baggy jeans for that classic 2000s silhouette, and the white sneakers tie the tee's base color together. 
+
+**Look 2: Edgy Streetwear**
+*   Y2K Baby Tee — Butterfly Print
+*   Wide-leg khaki trousers
+*   Black cropped zip hoodie (worn open)
+*   Black combat boots
+
+*Why it works:* The cropped hoodie adds warmth while keeping the pink and purple butterfly graphic front and center, grounded by the tough combat boots.
+
+  Fit card: Literally just scored the ultimate Y2K baby tee with the cutest little butterfly print on Depop for $18. The pink and purple graphic gives off major early-2000s mall vibes, especially paired with some baggy dark wash jeans and chunky sneakers. Cannot wait to live in this all summer.
+
+2 model calls this session, 579 prompt + 247 output tokens
 ```
 
 **The three tools, tested one at a time**
