@@ -41,7 +41,7 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
-the agent searches for outfits that the user wants to browse based on preferences, filters, interests, constraints, - as parameters. The agent searches the listings of outfits and gives an list of outfit suggestions, what would pair well with each, and writes a small social-media style caption aswell .
+The user describes what they want, like “a vintage graphic tee under $30, size M”. The agent searches the listings file and picks the best match. It then suggests an outfit pairing that item with pieces from the user’s wardrobe, and writes a short social-media caption for the find. If nothing matches, it stops and tells the user what to change. 
 
 In short:  
 Searches a file of fake listings for matches
@@ -66,24 +66,36 @@ Writes a short caption, like something you’d post on Instagram
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Filters the listings by an optional size and price ceiling, then ranks what’s left by how many words from the description appear in each listing’s text.  
+
+- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->  
+description (str), size (str or None, default None), max_price (float or None, default None)  
+
+- **Returns:** A list of up to 10 listing dicts, best match first. Each dict has id, title, description, category, style_tags (list), size, condition, price (float), colors (list), brand (str or None), platform.  
+
+- **When it has nothing:**An empty list [], nothing else. Never None, never an exception.  
+  
+**Note:** max_price is inclusive (a `$`30 item matches “under `$`30”).  
+Size matches by whole word, not by substring. “M” matches “S/M” and “M”, but not “XL” or “L”.  
+
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+
+- **What it does:** Asks the model for one or two outfit ideas that pair a thrifted item with pieces from the user's wardrobe.
+- **Inputs:** `new_item` (dict, one listing in the shape above), `wardrobe` (dict with an `items` key holding a list of wardrobe item dicts, each with `id`, `name`, `category`, `colors`, `style_tags`, `notes`)
+- **Returns:** A non-empty string of outfit suggestions that names specific pieces from the wardrobe by their `name`.
+- **When it has nothing:** If `wardrobe["items"]` is empty, it still returns a non-empty string, with general styling advice for the item (types of pieces and colors that go with it). It never returns "" and never raises for an empty wardrobe.
+
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+
+- **What it does:** Asks the model to write a short social-media caption about the find, based on the item and the outfit suggestion.
+- **Inputs:** `outfit` (str, the output of `suggest_outfit`), `new_item` (dict, one listing)
+- **Returns:** A string of two to four sentences, written like a real post. It mentions the item, its price, and its platform once each. Wording differs between runs because the model's temperature is above 0.
+- **When it has nothing:** If `outfit` is empty or only whitespace, it returns a short descriptive message, such as "No outfit suggestion was provided, so no fit card was written." It does not call the model and does not raise.  
+
 
 ---
 
@@ -100,13 +112,16 @@ Writes a short caption, like something you’d post on Instagram
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** After `search_listings` runs, check `session["search_results"]`. If it is an empty list, write a message into `session["error"]` that names what the user can change (loosen the price limit, drop the size, or use broader keywords), leave `selected_item`, `outfit_suggestion` and `fit_card` as None, and return the session without calling `suggest_outfit` or `create_fit_card`. Otherwise, store the first result in `session["selected_item"]`, call `suggest_outfit` with it, then call `create_fit_card`.
+
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** Regex and string handling, with no model call. A regex pulls the price from phrases like "under $30" or "$30 or less" into `max_price` (float). A second regex pulls the size from phrases like "size M" into `size`. Filler words such as "under", "size", "looking", "for" and "a" are removed, and the remaining words become `description`. The three values are stored in `session["parsed"]`.  
+<!-- regex, string splitting, or asking the model — say which -->
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:**  In order: `query` and `wardrobe` (set at the start), `parsed`, `search_results`, `selected_item`, `outfit_suggestion`, `fit_card`. Each tool's result is written into the session and read back out for the next call. `error` stays None unless the run stops early.  
+ <!-- which fields, in what order -->
 
 ---
 

@@ -24,7 +24,7 @@ data earns credit; *"80% seemed reasonable"* does not.
 Given a query that matches at least one listing, the agent completes all three
 tool calls and returns a fit card — in at least 4 of 5 tries.
 
-**Why this target:**
+**Why this target:** My search is a plain keyword match with no plural handling, and two of the three tools call a model that can be rate limited or unreachable, so I allow one miss.
 <!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
@@ -36,7 +36,7 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
 Given a query that matches no listings, the agent stops before calling
 `suggest_outfit` and returns a message naming what to change — 5 of 5 tries.
 
-**Why this target:**
+**Why this target:** The empty branch is a plain 'if' statement on a list and model call is involved, so the same impossible query should behave identically every time.
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
 
@@ -55,8 +55,10 @@ Given a query that matches no listings, the agent stops before calling
      suggest_outfit is the shape you're after. -->
 
 
+  
+On a query that matches at least one listing, session["selected_item"]["id"] equals the id of session["search_results"][0], and the item passed into suggest_outfit has that same id, in 5 of 5 tries.  
 
-**Why this target:**
+**Why this target:** This is plain Python with no model involved. The same query gives the same search results every time, so there’s no reason for it to ever fail. A 4 of 5 target would be too easy. If it misses even once, my loop is dropping or replacing the item somewhere.
 
 
 
@@ -76,14 +78,16 @@ Given a query that matches no listings, the agent stops before calling
      be turned into a number. -->
 
 
+  
+Across 5 runs of the same matching query with caching off, all 5 fit cards contain the item’s price and platform name, at least 4 of 5 are two to four sentences long, and no two of the 5 are word-for-word identical.  
 
-**Why this target:**
+**Why this target:** The price and platform are in the prompt, so leaving them out means my prompt is weak, which is why 5 of 5. Sentence count depends on the model following instructions, so I allow one miss (4 of 5). “Not identical” checks that temperature is working. Two cards can differ by one word and still pass, so this guards against caching or TEMPERATURE = 0 rather than proving the cards are good.
 
 
 
 ---
 
-## 5. Your choice
+## 5. Your choice - The price request is acknowledged and the parsed price of the results is correct.
 
 <!-- YOU WRITE THIS ONE TOO.
 
@@ -93,8 +97,10 @@ Given a query that matches no listings, the agent stops before calling
      or an observable outcome. -->
 
 
+  
+For 5 different queries that each include a price limit (such as “under `$`20”, “`$`35 or less”), session["parsed"]["max_price"] equals the number typed, and every listing in session["search_results"] costs that amount or less, in 5 of 5 queries.  
 
-**Why this target:**
+**Why this target:** One of the main concerns of a thrift shoppers is their budget, if not the most primary reason. My regex and the filter in search_listings are both deterministic, so 5 of 5 is fair. The risk is parsing phrasings like “under 30 bucks” or “less than thirty dollars”, which my regex may miss. If it does, I’ve found a real gap to diagnose in unit 4, not a reason to lower the target. 
 
 
 
